@@ -1,0 +1,101 @@
+---
+title: "NDVI Calculation and Plant Phenology Analysis"
+output: html_document
+date: "2023-12-14"
+---
+
+## Background and Introduction
+
+Important stages of life for plants involve the growth of leaves, flowering, and senescence (death of leaves). Plants species adapt the timing of these events to local climate conditions in order to ensure successful reproduction. Subsequently, animal species often adapt their phenology to take advantage of food availability. As the climate shifts this balance is no longer in equilibrium. Shifts in phenology are therefore a common yardstick of understanding how and if ecosystems are adjusting to climate change.
+
+Plant phenology is an important area of study as it is a critical natural indicator of climate change, mainly because plants are in tune with the seasonal trends of their surrounding weather conditions. As climate change's effects begin to weigh heavier on natural ecosystems, the shifting of their phenophases has raised concern (Fang 2015).
+
+The most common phenological strategies include:
+
+-   winter deciduous : lose leaves in the winter, grow new leaves in the spring
+
+-   drought deciduous: lose leaves in the summer when water is limited
+
+-   evergreen: maintain leaves yearround
+
+In this project, I aim to analyze plant phenology near the Santa Clara River which flows from Santa Clarita to Ventura. I will be investigating the phenology of the following plant communities:
+
+-   riparian forests: grow along the river, dominated by winter deciduous cottonwood and willow trees
+
+-   grasslands: grow in open spaces, dominated by drought deciduous grasses
+
+-   chaparral shrublands: grow in more arid habitats, dominated by everygreen shrubs
+
+## Objective
+
+In order to investigate the phenology of these plant communities, I will generate a time series of Landsat imagery and polygons identifying the locations of study sites within each plant community.
+
+In order to successfully carry out the time series, I will need to :
+
+-   Convert spectral reflectance into a measure of vegetation productivity (NDVI)
+
+-   Calculate NDVI throughout the year
+
+-   Summarize NDVI values within vegetation communities
+
+-   Visualize changes in NDVI within vegetation communities
+
+### Data Information
+
+The two types used for this project are the `landsat.tif` files along with the `study_sites.shp` shape file.
+
+**The `landsat.tif` files are :**
+
+-   8 pre-processed scenes
+
+-    of Level 2 surface reflectance products
+
+-    in which erroneous values were set to NA
+
+-   scale factor set to 100
+
+-   bands 2-7
+
+-   and their dates in file name
+
+The **`study_sites.shp`** file contains polygons representing sites, containing `study_site` character string with plant type.
+
+## Importing needed libraries
+
+```{r message = FALSE}
+library(terra)
+library(sf)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+library(here)
+library(tmap)
+library(cowplot)
+```
+
+### Generating NDVI function
+
+In order to compute the NDVI for each landsat image, we first need to define the function which calculates the Normalized Difference Vegetation Index (NDVI). NDVI calculates the difference in their near infrared and red bands, normalized by their sum.
+
+```{r}
+ndvi_function <- function(nir, red){
+  (nir-red)/(nir+red)
+}
+```
+
+### Computing NDVI for a single scene
+
+I have a total of eight different landsat scenes which were collected by the Landsat OLI sensor on eight different days throughout the year. The file name corresponds to the date in which they were taken.
+
+In order to compute, I need to read in the landsat file using the `rast()` function, update the names of the layers to match the spectral bands they correspond to, and then finally apply the NDVI function using `lapp()`.  The `lapp()` function applies a function to each cell using layers as arguments. Therefore, it is important to input into `lapp()` which layers (or bands) to pass into the function. The NIR band is the 4th layer and the red band is the 3rd layer in our raster. In this case, because I defined the NIR band as the first argument and the red band as the second argument in our function, I tell `lapp()` to use the 4th layer first and 3rd layer second.
+
+```{r}
+landsat_20180612 <- rast('data/landsat_20180612.tif')
+
+# updating the names of the layers to match the bands
+names(landsat_20180612) <- c("blue","green","red","NIR","SWIR1","SWIR2")
+
+# applying NDVI function
+ndvi_20180612 <- lapp(landsat_20180612[[c(4,3)]], fun = ndvi_function)
+```
