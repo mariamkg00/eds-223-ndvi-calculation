@@ -1,5 +1,13 @@
 # NDVI Calculation and Plant Phenology Analysis 
-This repository contains a presentation-ready markdown file in which I analyze plant phenology near the Santa Clara River which flows from Santa Clarita to Ventura
+
+## Purpose
+This repository contains a presentation-ready markdown file in which I analyze plant phenology near the Santa Clara River which flows from Santa Clarita to Ventura. The purpose of this project is to calculate seasonal trends of plants and to analyze their phenology. I do so by generating a time series of Landsat imagery and polygons identifying the locations of study sites within each plant community 
+
+## Data Access
+To access the  data used for the project, please unzip this [folder](https://drive.google.com/file/d/1e9ZwWoC6kmqy5r7WtDOkabYa02jMx_sd/view?usp=sharing).
+
+## Final Output
+![timeseries](https://github.com/mariamkg00/eds-223-ndvi-calculation/assets/105567684/f241bff0-66e2-446d-ba4b-9d0a3dac59a0)
 
 
 ## Repository Structure
