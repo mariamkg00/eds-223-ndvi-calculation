@@ -6,8 +6,7 @@ This repository contains a presentation-ready markdown file in which I analyze p
 ## Data Access
 To access the  data used for the project, please unzip this [folder](https://drive.google.com/file/d/1e9ZwWoC6kmqy5r7WtDOkabYa02jMx_sd/view?usp=sharing).
 
-## Final Output
-![timeseries](https://github.com/mariamkg00/eds-223-ndvi-calculation/assets/105567684/f241bff0-66e2-446d-ba4b-9d0a3dac59a0)
+Because of the large size of the data folder, I added it to the `.gitignore` file in order to avoid pull/push errors. 
 
 
 ## Repository Structure
@@ -45,3 +44,6 @@ C:
             ._landsat_20190412.tif
             ._landsat_20190701.tif
 ```
+
+## Final Output
+![timeseries](https://github.com/mariamkg00/eds-223-ndvi-calculation/assets/105567684/f241bff0-66e2-446d-ba4b-9d0a3dac59a0)
