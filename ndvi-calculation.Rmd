@@ -99,3 +99,128 @@ names(landsat_20180612) <- c("blue","green","red","NIR","SWIR1","SWIR2")
 # applying NDVI function
 ndvi_20180612 <- lapp(landsat_20180612[[c(4,3)]], fun = ndvi_function)
 ```
+
+Efficiently computing NDVI for all landsat image scenes
+
+```{r}
+make_ndvi_layer <- function(file) {
+  landsat <- rast(file)
+names(landsat) <- c("blue","green","red","NIR","SWIR1","SWIR2")
+ndvi <- lapp(landsat[[c(4,3)]], fun = ndvi_function)
+}
+
+#  asking for the names of all the files in the week8 folder
+# the "pattern" option returns names that end in .tif (the file extension for the landsat scences)
+# the "full.names" option returns the full file path for each scene
+
+files <- list.files(here("data"), pattern = "*.tif$", full.names = TRUE)
+
+# updating function 
+make_ndvi_layer <- function(i) {
+  file <- files[i]
+  landsat <- rast(file)
+names(landsat) <- c("blue","green","red","NIR","SWIR1","SWIR2")
+ndvi <- lapp(landsat[[c(4,3)]], fun = ndvi_function)
+
+return(ndvi)
+}
+
+# let's test our function by asking it to read in the first file 
+test <- make_ndvi_layer(1)
+
+# create NDVI layer for each scene (day) and stack into a single rasterstack
+all_ndvi <- c(make_ndvi_layer(1),
+              make_ndvi_layer(2),
+              make_ndvi_layer(3),
+              make_ndvi_layer(4),
+              make_ndvi_layer(5),
+              make_ndvi_layer(6),
+              make_ndvi_layer(7),
+              make_ndvi_layer(8))
+
+
+# updating layer names to match date
+names(all_ndvi) <- c("2018-06-12",
+                     "2018=08-15",
+                     "2018-10-18",
+                     "2018-11-03",
+                     "2019-01-22",
+                     "2019-02-23",
+                     "2019-04-12",
+                     "2019-07-01")
+```
+
+### Comparing NDVI Across Vegetation Communities
+
+Now that I have computed the NDVI for each landsat image, I want to compare the changes in NDVI values across different vegetation communities. In order to read in the study sites, I will use `st_read()` to read in the `study_sites.shp` file.
+
+```{r message = FALSE}
+sites <- st_read(here('data','study_sites.shp'))
+```
+
+Now I will use `tm_shape()` to plot the study sites of a single NDVI layer.
+
+```{r message = FALSE}
+# plot study sites on a single NDVI layer
+tm_shape(all_ndvi[[1]])+
+  tm_raster()+
+  tm_shape(sites)+
+  tm_polygons()
+```
+
+### Extracting NDVI at Study Sites
+
+In order to find the average NDVI within each study site, I will use the `terra::extract()` function.
+
+`*terra::extract()` extracts values from a SpatRaster for a set of locations\*
+
+```{r}
+sites_ndvi <- terra::extract(all_ndvi, sites, fun = "mean")
+# returns dataframe with IDs corresponding to a site, nine columns are 
+
+sites_annotated <- cbind(sites, sites_ndvi)
+```
+
+In order to maintain a tidy data format, I will
+
+-   convert to a dataframe
+
+-   turn from wide to long format
+
+-   turn layer names into data format
+
+```{r}
+sites_clean <- sites_annotated %>% 
+  st_drop_geometry() %>% 
+  select(-ID) %>% 
+  pivot_longer(!study_site) %>% 
+  rename(NDVI = value) %>% 
+  mutate("year" = str_sub(name,2,5),
+         "month" = str_sub(name,7,8),
+         "day" = str_sub(name, -2,-1)) %>% 
+  unite("date", 4:6, sep = '-') %>% 
+  mutate("date" = lubridate::as_date(date)) %>% 
+  select(-name)
+```
+
+### Plotting the seasonal cycles of vegetation productivity
+
+```{r warning = FALSE}
+ggplot(sites_clean,
+       aes(x = date, y = NDVI,
+           group = study_site,
+           col = study_site)) +
+  scale_color_manual(values = c("#4B0082", "#8EB3D8", "#0E345C", "#D8BFD8","#212E3B")) +
+  geom_line(size = 1)+
+  theme_minimal()+
+   labs(x = "", y = "Normalized Difference Vegetation Index (NDVI)", col = "Vegetation type",
+       title = "Seasonal cycles of vegetation productivity")
+```
+
+### Discussion
+
+According to the generated plot above : grassland tends to peak in the winter, while forest1,forest2,and forest3 decline in vegetation productivity. The seasonal trend of vegetation productivity for riparian forests can be explained by this graph, as drier seasons arise, there is less vegetation. Furthermore, global warming can alter a seasonal cycle of vegetation productivity because the amount of water available can alter vegetation productivity for certain vegetation types.
+
+## Works Cited
+
+Fang, X., Chen, F. Plant phenology and climate change. *Sci. China Earth Sci.* **58**, 1043--1044 (2015). https://doi.org/10.1007/s11430-015-5077-7
